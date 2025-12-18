@@ -70,8 +70,8 @@ class PageCapture:
         screenshots.append(path1)
         print(f"✓ Screenshot 1 salvo: {path1}")
 
-        # Pressiona PgDn
-        pyautogui.press('pagedown')
+        # Pressiona end
+        pyautogui.press('end')
         time.sleep(0.5)
         print("✓ PageDown pressionado")
 

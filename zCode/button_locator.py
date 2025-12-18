@@ -1,5 +1,91 @@
 # button_locator.py
 
+"""
+🎯 BUTTON LOCATOR - Localizador Universal de Botões/Elementos na Tela
+
+FUNCIONALIDADE:
+    Classe genérica e reutilizável que localiza qualquer botão ou elemento visual
+    usando 3 técnicas combinadas:
+
+    1. Template Matching (OpenCV) - Compara imagem do botão salva
+    2. OCR (EasyOCR) - Lê e localiza texto na tela
+    3. LLM Vision (Ollama) - Valida com IA se encontrou corretamente
+
+PARÂMETROS ESTÁTICOS (hardcoded):
+    - margin = 100 (área de validação LLM)
+    - threshold = 0.7 (confiança mínima template matching)
+    - confidence > 0.5 (confiança mínima OCR)
+    - Idiomas OCR: ['pt', 'en']
+
+PARÂMETROS DINÂMICOS (você passa):
+    - llm_model: Modelo Ollama (padrão: "gemma3:12b")
+    - button_name: Texto do botão a procurar
+    - use_template: Caminho da imagem template
+    - validate_llm: True/False para validação com IA
+    - threshold: Ajuste de confiança (find_all_with_template)
+
+MÉTODOS PRINCIPAIS:
+
+    1. locate_tm(button_name, use_template=None, validate_llm=True)
+       └─ Localiza botão: Tenta Template → OCR → LLM
+       └─ Retorna: True/False + coordenadas em self.last_found_coords
+
+    2. find_all_with_template(screenshot, template_path, threshold=0.7)
+       └─ Encontra TODOS os matches de um template (ex: múltiplos sliders)
+       └─ Retorna: {'found': bool, 'matches': [{'x', 'y', 'confidence'}]}
+
+    3. list_items_below(parent_name)
+       └─ Lista itens abaixo de um elemento pai (ex: clusters abaixo de "Scans")
+       └─ Retorna: dict com {nome_item: {'x': int, 'y': int}}
+
+EXEMPLOS DE USO:
+
+    # Inicializar
+    locator = ButtonLocator(llm_model="bahtiyorovnozim/qwen3-vl-1-4b")
+
+    # Localizar botão com template + validação LLM
+    success = locator.locate_tm(
+        button_name="Registro Automático",
+        use_template="./buttons/registro_automatico.png",
+        validate_llm=True
+    )
+    if success:
+        coords = locator.last_found_coords
+        print(f"Botão em: ({coords['x']}, {coords['y']})")
+
+    # Encontrar todos os sliders na tela
+    screenshot = locator.capture_screen()
+    result = locator.find_all_with_template(
+        screenshot, 
+        "./buttons/slider.png",
+        threshold=0.8
+    )
+    for match in result['matches']:
+        print(f"Slider em: ({match['x']}, {match['y']})")
+
+    # Listar clusters abaixo de "Scans"
+    clusters = locator.list_items_below("Scans")
+    for nome, coords in clusters.items():
+        print(f"{nome}: ({coords['x']}, {coords['y']})")
+
+LIMITAÇÕES:
+    ✅ Funciona: Botões com texto, templates de imagem, elementos repetidos
+    ⚠️ Precisa: Ter texto OU template do elemento
+    ⚠️ OCR pode falhar: Fontes muito estilizadas ou pequenas
+    ⚠️ LLM é lento: Validação adiciona ~2-5s por botão
+
+DEPENDÊNCIAS:
+    - pyautogui (captura tela)
+    - easyocr (OCR)
+    - ollama (LLM Vision)
+    - PIL (manipulação imagem)
+    - cv2 (template matching)
+    - numpy (processamento)
+"""
+
+
+
+
 import pyautogui
 import easyocr
 import ollama

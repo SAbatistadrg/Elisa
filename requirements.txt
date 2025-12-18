@@ -1,0 +1,8 @@
+pyautogui
+easyocr
+opencv-python
+pillow
+numpy
+ollama
+plyer
+pygetwindow

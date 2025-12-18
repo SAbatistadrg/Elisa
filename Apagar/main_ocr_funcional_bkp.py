@@ -1,7 +1,7 @@
 # main.py
-from capture_module import PageCapture
+from zCode.tools.capture_module import PageCapture
 from template_matcher import TemplateMatcher
-from ocr_analyzer import OCRAnalyzer
+from zCode.ocr_analyzer_for_sliders import OCRAnalyzer
 from notifications import notify
 
 def main():
