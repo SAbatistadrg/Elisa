@@ -21,9 +21,6 @@ def callOCRSliders():
     capturer = PageCapture(save_dir="./salvos")
     capturer.clear_saved_images()
 
-    if not capturer.activate_scene_window():
-        return
-
     capturer.click_to_activate()
     screenshots = capturer.capture_initial_screenshots()
 

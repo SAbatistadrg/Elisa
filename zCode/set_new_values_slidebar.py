@@ -2,7 +2,6 @@ import os
 import time
 import pyautogui
 from button_locator import ButtonLocator
-from simple.window_manager import activate_and_maximize_scene_window
 from simple.moves import click, moverPara
 from simple.notifications import notify
 from callOCRSliders import callOCRSliders
@@ -77,9 +76,13 @@ def adjust_sliders_to_target(target_values):
                 time.sleep(0.3)
 
                 print(f"   ⌨️  Pressionando '{direction}' {steps_abs}x...")
-                for _ in range(steps_abs):
-                    pyautogui.press(direction)
-                    time.sleep(0.05)
+                if steps_abs > 1000:
+                    print("Um possivel erro foi identificado em um dos sliders...")
+                    pass
+                else:
+                    for _ in range(steps_abs):
+                        pyautogui.press(direction)
+                        time.sleep(0.05)
                 time.sleep(0.5)
             else:
                 print(f"\n✓ Slider 1: já está no valor correto ({current})")
@@ -109,10 +112,14 @@ def adjust_sliders_to_target(target_values):
                 time.sleep(0.3)
 
                 print(f"   ⌨️  Pressionando '{direction}' {steps_abs}x...")
-                for _ in range(steps_abs):
-                    pyautogui.press(direction)
-                    time.sleep(0.05)
-                time.sleep(0.5)
+                if steps_abs > 1000:
+                    print("Um possivel erro foi identificado em um dos sliders...")
+                    pass
+                else:
+                    for _ in range(steps_abs):
+                        pyautogui.press(direction)
+                        time.sleep(0.05)
+                    time.sleep(0.5)
             else:
                 print(f"\n✓ Slider 2: já está no valor correto ({current})")
     else:
@@ -120,7 +127,7 @@ def adjust_sliders_to_target(target_values):
 
     # ===== SLIDER 3 (após End) =====
     print("\n📜 Apertando End...")
-    moverPara(1182, 743)
+    moverPara(1182, 297) #here
     click()
     pyautogui.press('end')
     time.sleep(1)
@@ -155,9 +162,14 @@ def adjust_sliders_to_target(target_values):
                 time.sleep(0.3)
 
                 print(f"   ⌨️  Pressionando '{direction}' {steps_abs}x...")
-                for _ in range(steps_abs):
-                    pyautogui.press(direction)
-                    time.sleep(0.05)
+                
+                if steps_abs > 1000:
+                    print("Um possivel erro foi identificado em um dos sliders...")
+                    pass
+                else:
+                    for _ in range(steps_abs):
+                        pyautogui.press(direction)
+                        time.sleep(0.05)
                 time.sleep(0.5)
             else:
                 print(f"\n✓ Slider 3: já está no valor correto ({current})")
@@ -173,7 +185,6 @@ def adjust_sliders_to_target(target_values):
     print(f"📊 Valores finais: {final_values}")
 
 if __name__ == "__main__":
-    activate_and_maximize_scene_window()
     time.sleep(2)
     target = [0.05, 0.4, 0.03]
     adjust_sliders_to_target(target)

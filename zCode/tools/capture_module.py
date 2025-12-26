@@ -16,36 +16,6 @@ class PageCapture:
             file.unlink()
         print(f"✓ Pasta {self.save_dir} limpa")
 
-    def activate_scene_window(self):
-        """Ativa e maximiza a janela do Scene"""
-        def callback(hwnd, windows):
-            if win32gui.IsWindowVisible(hwnd):
-                title = win32gui.GetWindowText(hwnd)
-                if "scene" in title.lower():
-                    windows.append((hwnd, title))
-            return True
-
-        windows = []
-        win32gui.EnumWindows(callback, windows)
-
-        if not windows:
-            print("❌ Janela do Scene não encontrada")
-            return False
-
-        hwnd, title = windows[0]
-        print(f"✓ Janela encontrada: {title}")
-
-        # Ativa a janela
-        win32gui.ShowWindow(hwnd, win32con.SW_RESTORE)
-        win32gui.SetForegroundWindow(hwnd)
-        time.sleep(0.3)
-
-        # Maximiza
-        win32gui.ShowWindow(hwnd, win32con.SW_MAXIMIZE)
-        time.sleep(0.5)
-
-        return True
-
     def click_to_activate(self):
         """Dá um clique na página para ativá-la"""
         screen_width, screen_height = pyautogui.size()

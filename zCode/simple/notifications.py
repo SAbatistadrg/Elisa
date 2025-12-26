@@ -1,5 +1,5 @@
 from plyer import notification
-ativado = True
+ativado = False
 
 def notify(message, title="Scene Automation", duration=5):
     

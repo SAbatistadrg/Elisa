@@ -38,6 +38,10 @@ MÉTODOS PRINCIPAIS:
        └─ Lista itens abaixo de um elemento pai (ex: clusters abaixo de "Scans")
        └─ Retorna: dict com {nome_item: {'x': int, 'y': int}}
 
+    4. check_text_on_screen(text)
+       └─ Verifica se um texto está na tela usando OCR
+       └─ Retorna: True se confiança > 0.5, False caso contrário
+
 EXEMPLOS DE USO:
 
     # Inicializar
@@ -67,6 +71,12 @@ EXEMPLOS DE USO:
     clusters = locator.list_items_below("Scans")
     for nome, coords in clusters.items():
         print(f"{nome}: ({coords['x']}, {coords['y']})")
+
+    # Verificar se texto está na tela
+    if locator.check_text_on_screen("Processando"):
+        print("Texto encontrado!")
+    else:
+        print("Texto não encontrado")
 
 LIMITAÇÕES:
     ✅ Funciona: Botões com texto, templates de imagem, elementos repetidos
@@ -104,6 +114,7 @@ class ButtonLocator:
         """Captura screenshot da tela"""
         screenshot = ImageGrab.grab()
         return screenshot
+    
 
     def find_text_with_ocr(self, screenshot, target_text):
         """Encontra texto na tela e retorna coordenadas aproximadas"""
@@ -215,7 +226,7 @@ class ButtonLocator:
 
         # LLM identifica quais itens estão abaixo
         prompt = f"""Nesta imagem, quais itens estão abaixo de '{parent_name}'? 
-        Liste apenas os nomes dos itens, um por linha, sem numeração ou símbolos."""
+        Liste apenas os itens que contem "Cluster", um por linha, sem numeração ou símbolos."""
 
         response = ollama.chat(
             model=self.llm_model,
@@ -248,10 +259,63 @@ class ButtonLocator:
                         'x': center_x,
                         'y': center_y
                     }
-                    break
-
         print(f"✓ Coordenadas extraídas: {items_dict}")
         return items_dict
+    
+
+
+    def list_clusters(self):
+        print(f"🔍 Listando clusters da pagina inicial...")
+
+        screenshot = self.capture_screen()
+        screenshot.save('temp_list.png')
+
+        # LLM identifica quais itens estão abaixo
+        prompt = f"""Nesta imagem, quantos Clusters temos? Eles podem ser identificados com a seguinte 
+        nomenclatura: "Cluster_2", "Cluster_34", Cluster_133". Retorne apenas os nomes de cada Cluster e nada mais."""
+
+        response = ollama.chat(
+            model=self.llm_model,
+            messages=[{
+                'role': 'user',
+                'content': prompt,
+                'images': ['temp_list.png']
+            }]
+        )
+
+        items_text = response['message']['content'].strip()
+        items_list = [item.strip() for item in items_text.split('\n') if item.strip()]
+
+        print(f"✓ LLM encontrou {len(items_list)} itens: {items_list}")
+
+        # OCR extrai coordenadas de cada item
+        img_array = np.array(screenshot)
+        ocr_results = self.ocr_reader.readtext(img_array)
+
+        items_dict = {}
+        
+        for item_name in items_list:
+            for (bbox, text, confidence) in ocr_results:
+                # Normaliza o texto do OCR corrigindo erros comuns
+                if item_name.lower() in text.lower() and confidence > 0.5:
+                    x_coords = [point[0] for point in bbox]
+                    y_coords = [point[1] for point in bbox]
+                    center_x = int(sum(x_coords) / 4)
+                    center_y = int(sum(y_coords) / 4)
+
+                    items_dict[item_name] = {
+                        'x': center_x,
+                        'y': center_y
+                    }
+        print(f"✓ Coordenadas extraídas: {items_dict}")
+        print(f"📝 Tudo que o OCR detectou:")
+        for (bbox, text, confidence) in ocr_results:
+            print(f"  - '{text}' (confiança: {confidence:.2f})")
+        return items_dict
+
+
+
+
     def find_all_with_template(self, screenshot, template_path, threshold=0.7):
         """
         Encontra TODOS os matches de um template na screenshot.

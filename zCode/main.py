@@ -3,117 +3,60 @@ from simple.window_manager import activate_and_maximize_scene_window
 import time
 import pyautogui
 import os
-from simple.moves import click, moverPara
+from simple.moves import click, moverPara, enter, press
 from simple.notifications import notify
 import ollama
 from set_new_values_slidebar import adjust_sliders_to_target
+from status_window import StatusWindow  # <<< ADICIONAR
 
-def verify_and_select_dropdown(locator, project_root):
-    """
-    1. Testa os 4 templates pra abrir o dropdown (qualquer um é válido)
-    2. Tira print e pergunta pra IA oq está selecionado em azul
-    3. IA retorna a opção selecionada
-    4. Baseado na resposta, digita setas pra baixo + ENTER
-    """
-    time.sleep(2)
+def set_dropdown(locator, project_root):
+  moverPara(147,297)
+  click()
+  press('down', 4)
+  enter()
 
-    # Passo 1: Testa os 4 templates pra abrir o dropdown
-    templates = [
-        "vista_superior_e_nuvem_a_nuvem.png",
-        "com_base_no_alvo.png",
-        "com_base_na_vista_superior.png",
-        "nuvem_a_nuvem.png"
-    ]
+def processando():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    project_root = os.path.dirname(script_dir)
+    template_path = os.path.join(project_root, "buttons", "registro_em_andamento.png")
 
-    dropdown_opened = False
-    for template_name in templates:
-        template_path = os.path.join(project_root, "buttons", template_name)
-        if not os.path.exists(template_path):
-            continue
+    print(f"📂 Procurando template em: {template_path}")
+    print(f"📂 Arquivo existe? {os.path.exists(template_path)}")
 
-        screenshot = locator.capture_screen()
-        result = locator.find_with_template(screenshot, template_path)
-
-        if result['found']:
-            moverPara(result['x'], result['y'])
-            click()
-            dropdown_opened = True
-            time.sleep(1)
-            break
-
-    if not dropdown_opened:
-        notify("Erro ao abrir dropdown", title="Elisa", duration=3)
-        return False
-
-    # Passo 2: Tira print do dropdown aberto
-    time.sleep(0.5)
+    locator = ButtonLocator()
     screenshot = locator.capture_screen()
-    screenshot.save('temp_dropdown_check.png')
 
-    # Passo 3: Pergunta pra IA oq está selecionado em azul
-    prompt = "Qual é a opção que está selecionada/destacada em AZUL neste dropdown? Responda APENAS com o nome exato da opção, nada mais."
-    response = ollama.chat(
-        model=locator.llm_model,
-        messages=[{
-            'role': 'user',
-            'content': prompt,
-            'images': ['temp_dropdown_check.png']
-        }]
-    )
+    # Salva screenshot pra você ver o que ele tá capturando
+    screenshot.save("./salvos/debug_screenshot.png")
+    print("📸 Screenshot salvo em ./salvos/debug_screenshot.png")
 
-    current_option = response['message']['content'].strip().lower()
-    notify(f"Opção atual: {current_option}", title="Elisa", duration=2)
+    result = locator.find_with_template(screenshot, template_path)
 
-    # Mapeamento de opções e quantas setas pra baixo são necessárias
-    options_map = {
-        "com base no alvo": 3,
-        "com base na vista superior": 2,
-        "nuvem a nuvem": 1,
-        "vista superior e nuvem a nuvem": 0
-    }
+    print(f"🔍 Resultado completo: {result}")
 
-    # Passo 4: Baseado na resposta, digita setas pra baixo + ENTER
-    target_option = "vista superior e nuvem a nuvem"
-
-    if target_option in current_option:
-        notify("Opção correta!", title="Elisa", duration=2)
-        pyautogui.press('return')
-        time.sleep(1)
+    if result['found']:
+        print(f"✓ Template encontrado em ({result['x']}, {result['y']}) - Confiança: {result['confidence']:.2%}")
         return True
-
-    # Encontra quantas setas são necessárias
-    arrows_needed = 0
-    for option_name, arrow_count in options_map.items():
-        if option_name in current_option:
-            arrows_needed = arrow_count
-            break
-
-    if arrows_needed == 0 and target_option not in current_option:
-        notify("Erro ao identificar opção", title="Elisa", duration=3)
+    else:
+        print("❌ Template não encontrado")
+        # Tenta com threshold mais baixo
+        print("🔄 Tentando com threshold 0.6...")
+        # Você vai precisar modificar find_with_template pra aceitar threshold customizado
         return False
 
-    # Digita as setas pra baixo
-    for i in range(arrows_needed):
-        pyautogui.press('down')
-        time.sleep(0.2)
-
-    # Pressiona ENTER
-    time.sleep(0.3)
-    pyautogui.press('return')
-    time.sleep(1)
-
-    notify("Opção selecionada!", title="Elisa", duration=2)
-    return True
 
 def main():
     # Ativa e maximiza a janela SCENE
     activate_and_maximize_scene_window()
 
+    status = StatusWindow()  # <<< ADICIONAR
+    status.update("🚀 Iniciando automação...")  # <<< ADICIONAR
+
     locator = ButtonLocator(llm_model="gemma3:12b")
 
     # Pega o diretório do script (zCode/)
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    # Sobe um nível para Elisa/ (raiz do projeto)
+    # Sobe um nível para ANP/ (raiz do projeto)
     project_root = os.path.dirname(script_dir)
 
 
@@ -136,8 +79,11 @@ def main():
     #####################################
     try:
         #Essa variavel será usada so no final do loop
-        clusters_main_page = locator.list_items_below("Scans")
+        status.update("🔍 Listando clusters da página inicial...")  # <<< ADICIONAR
+        clusters_main_page = locator.list_clusters()
+        print(clusters_main_page)
 
+        status.update("📍 Localizando botão 'Registro Automático'...")  # <<< ADICIONAR
         template_path = os.path.join(project_root, "buttons", "registro_automatico.png")
         use_template = template_path if os.path.exists(template_path) else None
 
@@ -147,26 +93,30 @@ def main():
             validate_llm=False
         )
 
-        #notify(f"{result['found']},{result['x']},{result['y']}", title="Elisa", duration=3)
+        #notify(f"{result['found']},{result['x']},{result['y']}", title="ANP", duration=1)
         moverPara(result['x'], result['y'])
         click()
         time.sleep(3)
     except:
-        notify("Ocorreu um erro inesperado", title="Elisa", duration=5)
+        status.update("❌ Erro ao localizar botão inicial")  # <<< ADICIONAR
+        notify("Ocorreu um erro inesperado", title="ANP", duration=1)
 
     # Escaneia os clusters_reg_auto
     try:
-        notify("Iniciando identificação de clusters... Isso pode levar um tempo", title="Elisa", duration=3)
+        status.update("🔎 Identificando clusters... Aguarde")  # <<< ADICIONAR
+        notify("Iniciando identificação de clusters... Isso pode levar um tempo", title="ANP", duration=1)
         clusters_reg_auto = locator.list_items_below("Scans")
-        notify("Escaneado com sucesso!", title="Elisa", duration=3)
+        #notify("Escaneado com sucesso!", title="ANP", duration=1)
         print(clusters_reg_auto)
         # Clica nos clusters encontrados
         for nome, coords in clusters_reg_auto.items():
+            status.update(f"🖱️ Processando {nome}...")  # <<< ADICIONAR
             moverPara(coords['x'], coords['y'])
             click()
 
             # Clica em "Selecionar método"            
             try:
+                status.update(f"⚙️ Configurando método para {nome}...")  # <<< ADICIONAR
                 template_path = os.path.join(project_root, "buttons", "selecionar_metodo.png")
                 use_template = template_path if os.path.exists(template_path) else None
 
@@ -182,13 +132,15 @@ def main():
                     click()
 
                     # ============ VERIFICAR E SELECIONAR DROPDOWN ============
-                    verify_and_select_dropdown(locator, project_root)
+                    set_dropdown(locator, project_root)
 
                     # ============ AJUSTE DOS INPUTS ==============
-                    adjust_sliders_to_target([0.05, 0.4, 0.03])
+                    status.update(f"🎚️ Ajustando parâmetros...")  # <<< ADICIONAR
+                    adjust_sliders_to_target([0.060, 0.5, 0.033])
 
                     #============= CLICA PARA INICIAR O CICLO ==========
                     try:
+                        status.update(f"▶️ Iniciando registro de {nome}...")  # <<< ADICIONAR
                         template_path = os.path.join(project_root, "buttons", "registrar_e_verificar.png")
                         use_template = template_path if os.path.exists(template_path) else None
 
@@ -199,23 +151,53 @@ def main():
                         )
                         moverPara(result['x'], result['y'])
                         click()
+
                     except:
                         input("Error...")
                     ## ------- Aqui precisa de um sistema que espera o final do carregamento ---
-                    notify("Esperando 100s", title="Elisa", duration=3)
-                    time.sleep(100)
-                    notify("Pronto!", title="Elisa", duration=3)
+                    while True:
+                        if processando():
+                            print(f"⏳ Aguardando fim do processamento...")
+                            status.update(f"⏳ Aguardando fim do processamento...")
+                            time.sleep(5)
+                        else:
+                            break
+                    #Aqui podemos ter algumas paginas diferentes dependendo do resultado
+                    #Precisamos fazer tratamento para todas as ocasiões
                     
 
-                    # Sistema de verificação de resultados
-                    
+
+
+                    #Pagina 1, clássica = inicial
                     #Click no botao de resultado
+                    status.update(f"✅ Finalizando {nome}...")  # <<< ADICIONAR
+                    time.sleep(2)
                     print(clusters_main_page)
                     y = clusters_main_page[nome]['y']
-                    moverPara(coords['1136'], coords[y])
+                    moverPara(1136, y)
                     click()
-                    notify("okok, parei", title="Elisa", duration=3)
                     input("here")
+                    #notify("okok, parei", title="ANP", duration=1)
+                    
+
+
+                    # caso para clicar no botao cancelar, logo menos vamos revisar;
+                    # try:
+                    #     template_path = os.path.join(project_root, "buttons", "cancelar.png")
+                    #     use_template = template_path if os.path.exists(template_path) else None
+
+                    #     result = locator.locate_tm(
+                    #         button_name="",
+                    #         use_template=use_template,
+                    #         validate_llm=False
+                    #     )
+                    #     moverPara(result['x'], result['y'])
+                    #     click()
+                    # except:
+                    #     pass
+
+
+
                     
                     
                     
@@ -229,7 +211,10 @@ def main():
             if found_coords:
                 pyautogui.moveTo(found_coords['x'], found_coords['y'], duration=0.5)
     except:
+        status.update("❌ Erro na identificação de clusters")  # <<< ADICIONAR
         input("Falha no sistema de identificação de clusters, aperte ENTER para continuar...")
+    
+    status.update("🏁 Automação concluída!")  # <<< ADICIONAR
 
 if __name__ == "__main__":
     main()
