@@ -182,8 +182,8 @@ class Main:
                             #Click no botao de resultado
                             status.update(f"✅ Finalizando {nome}...")  # <<< ADICIONAR
                             time.sleep(2)
-                            #print(self.clusters_main_page)
-                            #y = self.clusters_main_page[nome]['y']
+                            print(self.clusters_main_page)
+                            y = self.clusters_main_page[nome]['y']
                             moverPara(1136, y)
                             click()
                             time.sleep(1)
