@@ -20,28 +20,16 @@ def processando():
     project_root = os.path.dirname(script_dir)
     template_path = os.path.join(project_root, "buttons", "registro_em_andamento.png")
 
-    print(f"📂 Procurando template em: {template_path}")
-    print(f"📂 Arquivo existe? {os.path.exists(template_path)}")
 
     locator = ButtonLocator()
     screenshot = locator.capture_screen()
 
     # Salva screenshot pra você ver o que ele tá capturando
     screenshot.save("./salvos/debug_screenshot.png")
-    print("📸 Screenshot salvo em ./salvos/debug_screenshot.png")
-
     result = locator.find_with_template(screenshot, template_path)
-
-    print(f"🔍 Resultado completo: {result}")
-
     if result['found']:
-        print(f"✓ Template encontrado em ({result['x']}, {result['y']}) - Confiança: {result['confidence']:.2%}")
         return True
     else:
-        print("❌ Template não encontrado")
-        # Tenta com threshold mais baixo
-        print("🔄 Tentando com threshold 0.6...")
-        # Você vai precisar modificar find_with_template pra aceitar threshold customizado
         return False
 
 
@@ -61,12 +49,7 @@ def main():
 
 
 
-
-
-
-
-
-
+ 
 
 
 
@@ -108,6 +91,7 @@ def main():
         clusters_reg_auto = locator.list_items_below("Scans")
         #notify("Escaneado com sucesso!", title="ANP", duration=1)
         print(clusters_reg_auto)
+
         # Clica nos clusters encontrados
         for nome, coords in clusters_reg_auto.items():
             status.update(f"🖱️ Processando {nome}...")  # <<< ADICIONAR
@@ -136,7 +120,7 @@ def main():
 
                     # ============ AJUSTE DOS INPUTS ==============
                     status.update(f"🎚️ Ajustando parâmetros...")  # <<< ADICIONAR
-                    adjust_sliders_to_target([0.060, 0.5, 0.033])
+                    adjust_sliders_to_target([0.070, 0.2, 0.044])
 
                     #============= CLICA PARA INICIAR O CICLO ==========
                     try:
@@ -176,26 +160,35 @@ def main():
                     y = clusters_main_page[nome]['y']
                     moverPara(1136, y)
                     click()
-                    input("here")
-                    #notify("okok, parei", title="ANP", duration=1)
+                    time.sleep(1)
+
+                ###########
+                ########### Após Entrar no relatório ###############
+                ###########
+                    locator.read_report()
+
+
+                    ##SISTEMA DE ARMAZENAMENTO DAS VARIAVEIS
+                    ##CODE
+
+                    ##SISTEMA DE OTIMIZAÇÃO PARA CALCULO DE NOVOS TARGETS
+                    ##CODE
+
+                    ##FECHAR RELATÓRIO E REINICIAR LOOP
+                    status.update("📍 Fechando relatório...")  # <<< ADICIONAR
+                    template_path = os.path.join(project_root, "buttons", "fechar_relatorio.png")
+                    use_template = template_path if os.path.exists(template_path) else None
+
+                    result = locator.locate_tm(
+                        button_name="",
+                        use_template=use_template,
+                        validate_llm=False
+                    )
+                    #notify(f"{result['found']},{result['x']},{result['y']}", title="ANP", duration=1)
+                    moverPara(result['x'], result['y'])
+                    click()
+
                     
-
-
-                    # caso para clicar no botao cancelar, logo menos vamos revisar;
-                    # try:
-                    #     template_path = os.path.join(project_root, "buttons", "cancelar.png")
-                    #     use_template = template_path if os.path.exists(template_path) else None
-
-                    #     result = locator.locate_tm(
-                    #         button_name="",
-                    #         use_template=use_template,
-                    #         validate_llm=False
-                    #     )
-                    #     moverPara(result['x'], result['y'])
-                    #     click()
-                    # except:
-                    #     pass
-
 
 
                     

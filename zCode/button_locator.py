@@ -384,3 +384,28 @@ class ButtonLocator:
             print(f"❌ Erro em find_all_with_template: {e}")
             return {'found': False, 'matches': []}
 
+
+    def read_report(self):
+        screenshot = self.capture_screen()
+        screenshot.save('temp_list.png')
+
+        # LLM identifica quais itens estão abaixo
+        #prompt = f"""Nesta imagem, procure os valores descrito nos outputs: 'Erro de ponto máximo' em mm, 'Media de erro de ponto' em mm e 
+        #'Sobreposição mínima' em %. Retorne apenas os número no formato float. Exemplo: 1.7, 3.5, 25.0. Caso
+        #não tenha certeza de algum valor, retorne -1.0. Retorne apenas os números e nada mais"""
+
+        prompt = """Me diga o valor máximo, Médio e percentual que você vê na tela. Retorne apenas os numeros e nada mais."""
+        response = ollama.chat(
+            model=self.llm_model,
+            messages=[{
+                'role': 'user',
+                'content': prompt,
+                'images': ['temp_list.png']
+            }]
+        )
+
+        items_text = response['message']['content'].strip()
+        items_list = [item.strip() for item in items_text.split('\n') if item.strip()]
+
+        print(f"✓ LLM encontrou {len(items_list)} itens: {items_list}")
+        return items_text
