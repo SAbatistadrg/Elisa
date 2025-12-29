@@ -408,4 +408,4 @@ class ButtonLocator:
         items_list = [item.strip() for item in items_text.split('\n') if item.strip()]
 
         print(f"✓ LLM encontrou {len(items_list)} itens: {items_list}")
-        return items_text
+        return items_list

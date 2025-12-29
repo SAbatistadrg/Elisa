@@ -8,7 +8,9 @@ from simple.notifications import notify
 import ollama
 from set_new_values_slidebar import adjust_sliders_to_target
 from status_window import StatusWindow  # <<< ADICIONAR
-
+from context import context
+from target_optimizer import TargetOptimizer
+from database_manager import DatabaseManager
 
 
 
@@ -38,6 +40,25 @@ class Main:
             return True
         else:
             return False
+        
+
+    def verificar_falha_registro(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        project_root = os.path.dirname(script_dir)
+        template_path = os.path.join(project_root, "buttons", "falha_no_registro.png")
+
+
+        locator = ButtonLocator()
+        screenshot = locator.capture_screen()
+
+        # Salva screenshot pra você ver o que ele tá capturando
+        screenshot.save("./salvos/debug_screenshot.png")
+        result = locator.find_with_template(screenshot, template_path)
+        if result['found']:
+            return True
+        else:
+            return False
+
 
 
     def registroAutomatico(self):
@@ -66,8 +87,6 @@ class Main:
                 use_template=use_template,
                 validate_llm=False
             )
-
-            #notify(f"{result['found']},{result['x']},{result['y']}", title="ANP", duration=1)
             moverPara(result['x'], result['y'])
             click()
             time.sleep(3)
@@ -82,11 +101,20 @@ class Main:
     def main(self):
         # Ativa e maximiza a janela SCENE
         activate_and_maximize_scene_window()
-
+        time.sleep(1)
+        context.set_project_from_window() # << SETA O NOME DO PROJETO
+        context.set_static_inputs(.5, 10, 30)
+        
         status = StatusWindow()  # <<< ADICIONAR
         status.update("🚀 Iniciando automação...")  # <<< ADICIONAR
 
         locator = ButtonLocator(llm_model="gemma3:12b")
+
+        target = TargetOptimizer()
+
+        db = DatabaseManager()
+
+
 
         # Pega o diretório do script (zCode/)
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -114,13 +142,13 @@ class Main:
             status.update("🔎 Identificando clusters... Aguarde")  # <<< ADICIONAR
             notify("Iniciando identificação de clusters... Isso pode levar um tempo", title="ANP", duration=1)
             clusters_reg_auto = locator.list_items_below("Scans")
-            #notify("Escaneado com sucesso!", title="ANP", duration=1)
-            print(clusters_reg_auto)
 
             # Clica nos clusters encontrados
             for nome, coords in clusters_reg_auto.items():
                 while True:
                     status.update(f"🖱️ Processando {nome}...")  # <<< ADICIONAR
+                    context.set_cluster(nome)
+
                     moverPara(coords['x'], coords['y'])
                     click()
 
@@ -142,11 +170,14 @@ class Main:
                             click()
 
                             # ============ VERIFICAR E SELECIONAR DROPDOWN ============
+                            time.sleep(1)
                             self.set_dropdown()
 
                             # ============ AJUSTE DOS INPUTS ==============
-                            status.update(f"🎚️ Ajustando parâmetros...")  # <<< ADICIONAR
-                            adjust_sliders_to_target([0.070, 0.2, 0.044])
+                            status.update(f"🧮 Calculando novos inputs...") 
+                            targets = target.get_new_targets()
+                            status.update(f"🎚️ Ajustando parâmetros...")  
+                            adjust_sliders_to_target(targets)
 
                             #============= CLICA PARA INICIAR O CICLO ==========
                             try:
@@ -176,49 +207,90 @@ class Main:
                             #Precisamos fazer tratamento para todas as ocasiões
                             
 
-
-
-                            #Pagina 1, clássica = inicial
-                            #Click no botao de resultado
-                            status.update(f"✅ Finalizando {nome}...")  # <<< ADICIONAR
-                            time.sleep(2)
-                            print(self.clusters_main_page)
-                            y = self.clusters_main_page[nome]['y']
-                            moverPara(1136, y)
-                            click()
-                            time.sleep(1)
-
-                        ###########
-                        ########### Após Entrar no relatório ###############
-                        ###########
-                            locator.read_report()
-
-
-                            ##SISTEMA DE ARMAZENAMENTO DAS VARIAVEIS
-                            ##CODE
+                            #Pagina 1, falha no reigstro
                             #here
-
-                            ##SISTEMA DE OTIMIZAÇÃO PARA CALCULO DE NOVOS TARGETS
-                            ##CODE
-
-                            ##FECHAR RELATÓRIO E REINICIAR LOOP
-                            status.update("📍 Fechando relatório...")  # <<< ADICIONAR
-                            template_path = os.path.join(project_root, "buttons", "fechar_relatorio.png")
-                            use_template = template_path if os.path.exists(template_path) else None
-
-                            result = locator.locate_tm(
-                                button_name="",
-                                use_template=use_template,
-                                validate_llm=False
+                            if self.verificar_falha_registro():
+                                status.update(f"⚠️ Parâmetros insuficientes. Incluindo na análise e tentando novamente...")
+                                
+                                analysis_id, numero_analise = db.insert_analysis(
+                                nome_projeto=context.nome_projeto,
+                                cluster=context.cluster,
+                                input1=targets[0], # O valor que você usou
+                                input2=context.static_inputs['x2'],
+                                input3=targets[2],
+                                input4=context.static_inputs.get('x4'), # Opcional
+                                input5=context.static_inputs.get('x5'), # Opcional
+                                output1=float(0), # EPM
+                                output2=float(0), # MEP
+                                output3=float(0) # SM
                             )
-                            #notify(f"{result['found']},{result['x']},{result['y']}", title="ANP", duration=1)
-                            moverPara(result['x'], result['y'])
-                            click()
-                            time.sleep(1)
+                                
+                                time.sleep(5)
+                                moverPara(877,453) #Perigoso, mudar depois
+                                click()
+                            else:
+                                #Pagina 2, clássica = inicial
+                                #Click no botao de resultado
+                                status.update(f"✅ Finalizando {nome}...")  # <<< ADICIONAR
+                                time.sleep(2)
+                                print(self.clusters_main_page)
+                                y = self.clusters_main_page[nome]['y']
+                                moverPara(1136, y)
+                                click()
+                                time.sleep(1)
+
+                            ###########
+                            ########### Após Entrar no relatório ###############
+                            ###########
+                                report_values = locator.read_report()
+                                
+                                ##SISTEMA DE ARMAZENAMENTO DAS VARIAVEIS
+                                ##PRÉ PRÉ TRATAMENTO
+                                outputs_limpos = [x.replace(' ', '').replace('%', '').replace('mm', '') for x in report_values]
+
+                                analysis_id, numero_analise = db.insert_analysis(
+                                    nome_projeto=context.nome_projeto,
+                                    cluster=context.cluster,
+                                    input1=targets[0], # O valor que você usou
+                                    input2=context.static_inputs['x2'],
+                                    input3=targets[2],
+                                    input4=context.static_inputs.get('x4'), # Opcional
+                                    input5=context.static_inputs.get('x5'), # Opcional
+                                    output1=float(outputs_limpos[0]), # EPM
+                                    output2=float(outputs_limpos[1]), # MEP
+                                    output3=float(outputs_limpos[2]) # SM
+                                )
+                                
+                                
+
+                                ##SISTEMA DE OTIMIZAÇÃO PARA CALCULO DE NOVOS TARGETS
+                                ##CODE
+
+                                ##FECHAR RELATÓRIO E REINICIAR LOOP
+                                status.update("📍 Fechando relatório...")  # <<< ADICIONAR
+                                template_path = os.path.join(project_root, "buttons", "fechar_relatorio.png")
+                                use_template = template_path if os.path.exists(template_path) else None
+
+                                result = locator.locate_tm(
+                                    button_name="",
+                                    use_template=use_template,
+                                    validate_llm=False
+                                )
+                                
+                                moverPara(result['x'], result['y'])
+                                click()
+                                time.sleep(1)
                             self.registroAutomatico()
-
                             
+                            
+                            ##############################
+                            # Análise Critério de parada #
+                            ##############################
 
+                            if context.criterio <= float(outputs_limpos[2]):
+                                break
+                            else:
+                                pass
 
                             
                             
