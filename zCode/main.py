@@ -104,6 +104,7 @@ class Main:
         time.sleep(1)
         context.set_project_from_window() # << SETA O NOME DO PROJETO
         context.set_static_inputs(.5, 10, 30)
+        context.set_minimum_dinamic_inputs(.5, .10)
         
         status = StatusWindow()  # <<< ADICIONAR
         status.update("🚀 Iniciando automação...")  # <<< ADICIONAR
@@ -208,7 +209,6 @@ class Main:
                             
 
                             #Pagina 1, falha no reigstro
-                            #here
                             if self.verificar_falha_registro():
                                 status.update(f"⚠️ Parâmetros insuficientes. Incluindo na análise e tentando novamente...")
                                 
@@ -308,7 +308,10 @@ class Main:
             status.update("❌ Erro na identificação de clusters")  # <<< ADICIONAR
             input("Falha no sistema de identificação de clusters, aperte ENTER para continuar...")
         
-        status.update("🏁 Automação concluída!")  # <<< ADICIONAR
+        status.update(f"✅ Clusters Finalizados com sucesso!")  # <<< ADICIONAR
+        input()
+
+        
 
 if __name__ == "__main__":
     app = Main()

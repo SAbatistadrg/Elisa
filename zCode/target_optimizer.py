@@ -5,6 +5,7 @@ from skopt import gp_minimize
 from skopt.space import Real
 from context import context
 from database_manager import DatabaseManager
+from context import context
 
 class TargetOptimizer:
     """
@@ -22,11 +23,11 @@ class TargetOptimizer:
         self.db = db_manager if db_manager else DatabaseManager()
 
         # Definições de ranges e passos
-        self.x1_min = 0.010
+        self.x1_min = context.dinamic_inputs['x1'] #se 
         self.x1_max = 0.1
         self.x1_step = 0.005
 
-        self.x3_min = 0.001
+        self.x3_min = context.dinamic_inputs['x3']
         self.x3_max = 0.1
         self.x3_step = 0.001
 

@@ -11,6 +11,10 @@ class AnalysisContext:
             'x4': None,  # dmp
             'x5': None   # nmi
         }
+        self.dinamic_inputs = {
+            'x1': None,  # subamostraNR
+            'x3': None,  # subamostraR
+        }
 
     def set_project_from_window(self):
         """Extrai o nome do projeto do título da janela ativa"""
@@ -49,6 +53,11 @@ class AnalysisContext:
         self.static_inputs['x2'] = x2
         self.static_inputs['x4'] = x4
         self.static_inputs['x5'] = x5
+
+    def set_minimum_dinamic_inputs(self, x1, x3):
+        """Define os inputs estáticos (2, 4, 5)"""
+        self.dinamic_inputs['x1'] = x1
+        self.dinamic_inputs['x3'] = x3
 
     def is_configured(self):
         """Verifica se o contexto está completo"""
